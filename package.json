@@ -1,0 +1,35 @@
+{
+  "name": "vscode-php-symbol-rename",
+  "preview": true,
+  "version": "0.0.1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/844196/vscode-php-symbol-rename"
+  },
+  "engines": {
+    "vscode": "^1.22.0"
+  },
+  "main": "./out/extension",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -watch"
+  },
+  "extensionDependencies": [
+    "bmewburn.vscode-intelephense-client"
+  ],
+  "activationEvents": [
+    "onLanguage:php"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "php"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.36.0",
+    "typescript": "^3.5.2"
+  }
+}
