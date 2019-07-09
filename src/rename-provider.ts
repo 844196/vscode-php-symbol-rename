@@ -130,6 +130,8 @@ const flattenDocumentSymbols = (syms: DocumentSymbol[]) => {
   return acc;
 };
 
+// TODO vendor pathはcomposer.jsonを参照するように
+// http://tadasy.hateblo.jp/entry/2013/10/09/193415
 const workspaceVendors = () =>
   (workspace.workspaceFolders || []).map(({ uri }) => `${uri.path}/vendor`);
 
