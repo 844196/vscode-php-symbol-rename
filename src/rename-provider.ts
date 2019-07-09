@@ -1,6 +1,16 @@
 import { Range, commands, DocumentSymbol, Location, Position, RenameProvider, SymbolKind, TextDocument, Uri, WorkspaceEdit, workspace } from 'vscode';
 
+// TODO
+// ログはデバッグビルドだけ出力するようにしたい
+// それかオプション?
+
+/**
+ * intelephenseのXxxProviderを利用してPHPのシンボルリネーム機能を提供するプロバイダ
+ */
 export class PhpRenameProvider implements RenameProvider {
+  /**
+   * @override
+   */
   public async prepareRename(doc: TextDocument, pos: Position) {
     const [sym, def] = await getSymbol(doc.uri, pos);
     if (!sym || !def) {
@@ -19,6 +29,9 @@ export class PhpRenameProvider implements RenameProvider {
     return undefined;
   }
 
+  /**
+   * @override
+   */
   public async provideRenameEdits(doc: TextDocument, pos: Position, newName: string) {
     const targets = await getReferences(doc.uri, pos);
     if (targets.length === 0) {
@@ -61,7 +74,9 @@ export class PhpRenameProvider implements RenameProvider {
   }
 }
 
-// TODO Eitherモナド
+// TODO ここから下は別ファイルにしたい
+
+// TODO Eitherモナドの方がいいような
 const getSymbol = async (uri: Uri, pos: Position): Promise<[undefined, undefined] | [DocumentSymbol, Location]> => {
   const def = await getDefinition(uri, pos);
   if (!def) {
