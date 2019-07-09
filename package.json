@@ -3,12 +3,14 @@
   "preview": true,
   "version": "0.0.1",
   "license": "MIT",
+  "author": "Masaya Tk <844196@gmail.com>",
+  "publisher": "844196",
   "repository": {
     "type": "git",
     "url": "https://github.com/844196/vscode-php-symbol-rename"
   },
   "engines": {
-    "vscode": "^1.22.0"
+    "vscode": "^1.36.0"
   },
   "main": "./out/extension",
   "scripts": {
@@ -30,6 +32,7 @@
   },
   "devDependencies": {
     "@types/vscode": "^1.36.0",
-    "typescript": "^3.5.2"
+    "typescript": "^3.5.2",
+    "vsce": "^1.64.0"
   }
 }

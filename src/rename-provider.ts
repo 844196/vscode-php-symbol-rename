@@ -1,11 +1,21 @@
-import { commands, DocumentSymbol, Location, Position, RenameProvider, SymbolKind, TextDocument, Uri, WorkspaceEdit, workspace } from 'vscode';
+import { Range, commands, DocumentSymbol, Location, Position, RenameProvider, SymbolKind, TextDocument, Uri, WorkspaceEdit, workspace } from 'vscode';
 
 export class PhpRenameProvider implements RenameProvider {
   public async prepareRename(doc: TextDocument, pos: Position) {
-    const symbol = await getSymbol(doc.uri, pos);
-    if (!symbol) {
+    const [sym, def] = await getSymbol(doc.uri, pos);
+    if (!sym || !def) {
       throw new Error('You can not rename this symbol');
     }
+
+    if (onVendor(def)) {
+      console.log('vendor以下に定義があるためキャンセル', def);
+
+      // TODO
+      //   -  vendor定義の定数名・メソッド名・プロパティ名を書き換えてはいけない
+      //   - クラス名・抽象クラス・トレイト名・インターフェイス名はコンテキストによる
+      throw new Error('You can not rename this symbol');
+    }
+
     return undefined;
   }
 
@@ -16,13 +26,13 @@ export class PhpRenameProvider implements RenameProvider {
     }
 
     const edit = new WorkspaceEdit();
-    const sym = (await getSymbol(doc.uri, pos))!;
-    const def = (await getDefinition(doc.uri, pos))!;
-
-    const workspaceVendors = (workspace.workspaceFolders || []).map(({ uri }) => `${uri.path}/vendor`);
+    const [sym, def] = await getSymbol(doc.uri, pos);
+    if (!sym || !def) {
+      return;
+    }
 
     for (const target of targets) {
-      if (workspaceVendors.some((vendorPath) => target.uri.path.includes(vendorPath))) {
+      if (onVendor(target)) {
         continue;
       }
 
@@ -51,18 +61,28 @@ export class PhpRenameProvider implements RenameProvider {
   }
 }
 
-const getSymbol = async (uri: Uri, pos: Position) => {
+// TODO Eitherモナド
+const getSymbol = async (uri: Uri, pos: Position): Promise<[undefined, undefined] | [DocumentSymbol, Location]> => {
   const def = await getDefinition(uri, pos);
   if (!def) {
-    return undefined;
+    return [undefined, undefined];
   }
+  console.log('シンボル定義を発見', def);
 
-  const syms = await getDocumentSymbols(uri).then(flattenDocumentSymbols);
+  const syms = await getDocumentSymbols(def.uri).then(flattenDocumentSymbols);
   for (const sym of syms) {
-    if (sym.range.isEqual(def.range)) {
-      return sym;
+    console.log('シンボルを検証', JSON.stringify({
+      def: rangeToString(def.range),
+      [sym.name]: rangeToString(sym.selectionRange),
+    }));
+
+    if (def.range.contains(sym.selectionRange)) {
+      console.log('シンボル発見', sym);
+      return [sym, def];
     }
   }
+
+  return [undefined, undefined];
 };
 
 const getReferences = async (uri: Uri, pos: Position) => {
@@ -94,3 +114,12 @@ const flattenDocumentSymbols = (syms: DocumentSymbol[]) => {
 
   return acc;
 };
+
+const workspaceVendors = () =>
+  (workspace.workspaceFolders || []).map(({ uri }) => `${uri.path}/vendor`);
+
+const onVendor = (x: Location) =>
+  workspaceVendors().some((vp) => x.uri.path.includes(vp));
+
+const rangeToString = ({ start, end }: Range) =>
+  `${start.line}:${start.character}~${end.line}:${end.character}`;
