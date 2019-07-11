@@ -1,8 +1,8 @@
 import { ExtensionContext, languages } from 'vscode';
-import { PhpRenameProvider } from './rename-provider';
+import { PhSymbolpRenameProvider } from './rename-provider';
 
 const activate = (ctx: ExtensionContext) => {
-  ctx.subscriptions.push(languages.registerRenameProvider('php', new PhpRenameProvider()));
+  ctx.subscriptions.push(languages.registerRenameProvider('php', new PhSymbolpRenameProvider()));
   console.log('vscode-php-symbol-rename is active');
 };
 

@@ -1,19 +1,9 @@
-import { Range, Location, Position, RenameProvider, SymbolKind, TextDocument, WorkspaceEdit, workspace } from 'vscode';
+import * as path from 'path';
+import { Location, Position, Range, RenameProvider, SymbolKind, TextDocument, WorkspaceEdit, workspace } from 'vscode';
 import { getReferences, getSymbol } from './api';
 import { isNone } from 'fp-ts/lib/Option';
-import * as path from 'path';
 
-// TODO
-// ログはデバッグビルドだけ出力するようにしたい
-// それかオプション?
-
-/**
- * intelephenseのXxxProviderを利用してPHPのシンボルリネーム機能を提供するプロバイダ
- */
-export class PhpRenameProvider implements RenameProvider {
-  /**
-   * @override
-   */
+export class PhSymbolpRenameProvider implements RenameProvider {
   public async prepareRename(doc: TextDocument, pos: Position) {
     const result = await getSymbol(doc.uri, pos);
     if (isNone(result)) {
@@ -37,9 +27,6 @@ export class PhpRenameProvider implements RenameProvider {
     return undefined;
   }
 
-  /**
-   * @override
-   */
   public async provideRenameEdits(doc: TextDocument, pos: Position, newName: string) {
     const targets = await getReferences(doc.uri, pos);
     if (targets.length === 0) {
@@ -63,7 +50,7 @@ export class PhpRenameProvider implements RenameProvider {
           }
           acc[next.uri.toString()].push(next);
           return acc;
-        }, {})
+        }, {});
 
         for (const [, locations] of Object.entries(grouped)) {
           const doc = await workspace.openTextDocument(locations[0].uri);
@@ -109,7 +96,7 @@ export class PhpRenameProvider implements RenameProvider {
         edit.replace(
           target.uri,
           target.range,
-          JSON.stringify(target) === JSON.stringify(def) ? `$${normarized}` : normarized
+          JSON.stringify(target) === JSON.stringify(def) ? `$${normarized}` : normarized,
         );
 
         continue;
@@ -122,12 +109,7 @@ export class PhpRenameProvider implements RenameProvider {
   }
 }
 
-// TODO ここから下は別ファイルにしたい
-
 // TODO vendor pathはcomposer.jsonを参照するように
 // http://tadasy.hateblo.jp/entry/2013/10/09/193415
-const workspaceVendors = () =>
-  (workspace.workspaceFolders || []).map(({ uri }) => `${uri.path}/vendor`);
-
 const onVendor = (x: Location) =>
-  workspaceVendors().some((vp) => x.uri.path.includes(vp));
+  (workspace.workspaceFolders || []).map(({ uri }) => `${uri.path}/vendor`).some((vp) => x.uri.path.includes(vp));

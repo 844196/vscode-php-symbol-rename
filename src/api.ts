@@ -1,5 +1,5 @@
-import { Uri, DocumentSymbol, commands, Position, Location } from 'vscode';
-import { none, some, Option, isNone } from 'fp-ts/es6/Option';
+import { DocumentSymbol, Location, Position, Uri, commands } from 'vscode';
+import { Option, isNone, none, some } from 'fp-ts/lib/Option';
 
 export const getDocumentSymbols = async (uri: Uri) => {
   return (await commands.executeCommand<DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri))!;
