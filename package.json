@@ -34,5 +34,8 @@
     "@types/vscode": "^1.36.0",
     "typescript": "^3.5.2",
     "vsce": "^1.64.0"
+  },
+  "dependencies": {
+    "fp-ts": "^2.0.1"
   }
 }
