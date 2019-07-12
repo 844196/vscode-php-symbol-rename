@@ -1,5 +1,7 @@
 {
   "name": "vscode-php-symbol-rename",
+  "displayName": "PHP Symbol Rename",
+  "description": "Rename symbol using intelephense XxxProvider",
   "preview": true,
   "version": "0.0.1",
   "license": "MIT",

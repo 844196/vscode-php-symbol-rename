@@ -1,12 +1,13 @@
-# vscode-php-symbol-rename
+# PHP Symbol Rename
 
-## Build
+## Development
+
+### Build
 
 ```shell-session
 $ npx vsce package
 ```
 
-## TODO
+### TODO
 
-* [ ] リントルール
-* [ ] ベンダーパスが `vendor` ではないときの考慮
+* [ ] vendor path consider `composer.json['config']['vendor-dir']`
