@@ -12,10 +12,10 @@
   "engines": {
     "vscode": "^1.36.0"
   },
-  "main": "./out/extension",
+  "main": "./dist/extension",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc -watch"
+    "build": "webpack --mode production",
+    "build:dev": "webpack --mode development"
   },
   "extensionDependencies": [
     "bmewburn.vscode-intelephense-client"
@@ -36,11 +36,13 @@
     "@typescript-eslint/parser": "^1.11.0",
     "eslint": "^6.0.1",
     "eslint-config-prettier": "^6.0.0",
-    "eslint-plugin-import": "^2.18.0",
     "eslint-plugin-prettier": "^3.1.0",
     "prettier": "^1.18.2",
+    "ts-loader": "^6.0.4",
     "typescript": "^3.5.2",
-    "vsce": "^1.64.0"
+    "vsce": "^1.64.0",
+    "webpack": "^4.35.3",
+    "webpack-cli": "^3.3.5"
   },
   "dependencies": {
     "fp-ts": "^2.0.1"

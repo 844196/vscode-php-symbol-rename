@@ -5,20 +5,13 @@
   },
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "sourceType": "module",
-    "project": "./tsconfig.json",
-    "tsconfigRootDir": "."
+    "project": "./tsconfig.json"
   },
-  "plugins": [
-    "@typescript-eslint"
-  ],
   "extends": [
     "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:prettier/recommended",
-    "plugin:import/errors",
-    "plugin:import/warnings",
-    "plugin:import/typescript",
     "prettier/@typescript-eslint"
   ],
   "settings": {
@@ -42,8 +35,6 @@
     ],
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
-    "@typescript-eslint/no-use-before-define": "off",
-    "import/newline-after-import": "error",
-    "sort-imports": "error"
+    "@typescript-eslint/no-use-before-define": "off"
   }
 }
