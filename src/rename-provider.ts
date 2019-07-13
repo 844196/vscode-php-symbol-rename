@@ -1,17 +1,31 @@
 import * as path from 'path';
-import { Location, Position, Range, RenameProvider, SymbolKind, TextDocument, WorkspaceEdit, workspace } from 'vscode';
+import {
+  Location,
+  Position,
+  Range,
+  RenameProvider,
+  SymbolKind,
+  TextDocument,
+  WorkspaceEdit,
+  workspace,
+  Uri,
+} from 'vscode';
 import { getReferences, getSymbol } from './api';
 import { isNone } from 'fp-ts/lib/Option';
 
 export class PhSymbolpRenameProvider implements RenameProvider {
   public async prepareRename(doc: TextDocument, pos: Position) {
+    if (this.onVendor(doc.uri)) {
+      throw new Error('You can not rename this symbol');
+    }
+
     const result = await getSymbol(doc.uri, pos);
     if (isNone(result)) {
       throw new Error('You can not rename this symbol');
     }
     const [sym, def] = result.value;
 
-    if (onVendor(def)) {
+    if (this.onVendor(def)) {
       throw new Error('You can not rename this symbol');
     }
 
@@ -84,7 +98,7 @@ export class PhSymbolpRenameProvider implements RenameProvider {
     }
 
     for (const target of targets) {
-      if (onVendor(target)) {
+      if (this.onVendor(target)) {
         continue;
       }
 
@@ -107,9 +121,14 @@ export class PhSymbolpRenameProvider implements RenameProvider {
 
     return edit;
   }
-}
 
-// TODO vendor pathはcomposer.jsonを参照するように
-// http://tadasy.hateblo.jp/entry/2013/10/09/193415
-const onVendor = (x: Location) =>
-  (workspace.workspaceFolders || []).map(({ uri }) => `${uri.path}/vendor`).some((vp) => x.uri.path.includes(vp));
+  private onVendor(x: Location | Uri) {
+    const uri = x instanceof Uri ? x : x.uri;
+
+    // TODO vendor pathはcomposer.jsonを参照するように
+    // http://tadasy.hateblo.jp/entry/2013/10/09/193415
+    return (workspace.workspaceFolders || [])
+      .map(({ uri }) => `${uri.path}/vendor`)
+      .some((vp) => uri.path.includes(vp));
+  }
+}

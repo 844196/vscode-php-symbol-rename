@@ -3,6 +3,11 @@
   "displayName": "PHP Symbol Rename",
   "description": "Rename symbol using intelephense XxxProvider",
   "preview": true,
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#15202b",
+    "theme": "dark"
+  },
   "version": "0.0.1",
   "license": "MIT",
   "author": "Masaya Tk <844196@gmail.com>",
