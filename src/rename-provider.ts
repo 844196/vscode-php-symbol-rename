@@ -13,122 +13,124 @@ import {
 import { getReferences, getSymbol } from './api';
 import { isNone } from 'fp-ts/lib/Option';
 
-export class PhSymbolpRenameProvider implements RenameProvider {
-  public async prepareRename(doc: TextDocument, pos: Position) {
-    if (this.onVendor(doc.uri)) {
-      throw new Error('You can not rename this symbol');
-    }
+const onVendor = (x: Location | Uri) => {
+  const uri = x instanceof Uri ? x : x.uri;
 
-    const result = await getSymbol(doc.uri, pos);
-    if (isNone(result)) {
-      throw new Error('You can not rename this symbol');
-    }
-    const [sym, def] = result.value;
+  // TODO vendor pathはcomposer.jsonを参照するように
+  // http://tadasy.hateblo.jp/entry/2013/10/09/193415
+  return (workspace.workspaceFolders || []).map(({ uri }) => `${uri.path}/vendor`).some((vp) => uri.path.includes(vp));
+};
 
-    if (this.onVendor(def)) {
-      throw new Error('You can not rename this symbol');
-    }
-
-    switch (sym.kind) {
-      case SymbolKind.Class:
-      case SymbolKind.Interface:
-      case SymbolKind.Module:
-        if (doc.uri.toString() !== def.uri.toString()) {
-          throw new Error('You can not rename this symbol');
-        }
-    }
-
-    return undefined;
+const prepareRename: RenameProvider['prepareRename'] = async (doc, pos) => {
+  if (onVendor(doc.uri)) {
+    throw new Error('You can not rename this symbol');
   }
 
-  public async provideRenameEdits(doc: TextDocument, pos: Position, newName: string) {
-    const targets = await getReferences(doc.uri, pos);
-    if (targets.length === 0) {
-      return;
-    }
+  const result = await getSymbol(doc.uri, pos);
+  if (isNone(result)) {
+    throw new Error('You can not rename this symbol');
+  }
+  const [sym, def] = result.value;
 
-    const result = await getSymbol(doc.uri, pos);
-    if (isNone(result)) {
-      return;
-    }
-    const [sym, def] = result.value;
+  if (onVendor(def)) {
+    throw new Error('You can not rename this symbol');
+  }
 
-    const edit = new WorkspaceEdit();
-    switch (sym.kind) {
-      case SymbolKind.Class:
-      case SymbolKind.Interface:
-      case SymbolKind.Module:
-        const grouped = targets.reduce<{ [file: string]: Location[] }>((acc, next) => {
-          if (!acc[next.uri.toString()]) {
-            acc[next.uri.toString()] = [];
-          }
-          acc[next.uri.toString()].push(next);
-          return acc;
-        }, {});
+  switch (sym.kind) {
+    case SymbolKind.Class:
+    case SymbolKind.Interface:
+    case SymbolKind.Module:
+      if (doc.uri.toString() !== def.uri.toString()) {
+        throw new Error('You can not rename this symbol');
+      }
+  }
 
-        for (const [, locations] of Object.entries(grouped)) {
-          const doc = await workspace.openTextDocument(locations[0].uri);
-          for (const location of locations) {
-            const selection = doc.getText(location.range);
-            const startPos = selection.indexOf(sym.name);
+  return undefined;
+};
 
-            if (startPos === -1) {
-              continue;
-            }
+const provideRenameEdits: RenameProvider['provideRenameEdits'] = async (
+  doc: TextDocument,
+  pos: Position,
+  newName: string,
+) => {
+  const targets = await getReferences(doc.uri, pos);
+  if (targets.length === 0) {
+    return;
+  }
 
-            let newRange = location.range;
-            if (startPos > 0) {
-              newRange = new Range(newRange.start.translate(0, startPos), newRange.end);
-            }
+  const result = await getSymbol(doc.uri, pos);
+  if (isNone(result)) {
+    return;
+  }
+  const [sym, def] = result.value;
 
-            edit.replace(location.uri, newRange, newName);
-          }
+  const edit = new WorkspaceEdit();
+  switch (sym.kind) {
+    case SymbolKind.Class:
+    case SymbolKind.Interface:
+    case SymbolKind.Module:
+      const grouped = targets.reduce<{ [file: string]: Location[] }>((acc, next) => {
+        if (!acc[next.uri.toString()]) {
+          acc[next.uri.toString()] = [];
         }
+        acc[next.uri.toString()].push(next);
+        return acc;
+      }, {});
 
-        if (def.uri.scheme !== 'untitled') {
-          const newPath = path.format({
-            dir: path.dirname(def.uri.path),
-            name: newName,
-            ext: '.php',
-          });
-          edit.renameFile(def.uri, def.uri.with({ path: newPath }));
+      for (const [, locations] of Object.entries(grouped)) {
+        const doc = await workspace.openTextDocument(locations[0].uri);
+        for (const location of locations) {
+          const selection = doc.getText(location.range);
+          const startPos = selection.indexOf(sym.name);
+
+          if (startPos === -1) {
+            continue;
+          }
+
+          let newRange = location.range;
+          if (startPos > 0) {
+            newRange = new Range(newRange.start.translate(0, startPos), newRange.end);
+          }
+
+          edit.replace(location.uri, newRange, newName);
         }
-
-        return edit;
-    }
-
-    for (const target of targets) {
-      if (this.onVendor(target)) {
-        continue;
       }
 
-      if (sym.kind === SymbolKind.Property) {
-        // e.g. $foo -> foo
-        // e.g. foo  -> foo
-        const normarized = newName.replace(/^\$/, '');
-
-        edit.replace(
-          target.uri,
-          target.range,
-          JSON.stringify(target) === JSON.stringify(def) ? `$${normarized}` : normarized,
-        );
-
-        continue;
+      if (def.uri.scheme !== 'untitled') {
+        const newPath = path.format({
+          dir: path.dirname(def.uri.path),
+          name: newName,
+          ext: '.php',
+        });
+        edit.renameFile(def.uri, def.uri.with({ path: newPath }));
       }
 
-      edit.replace(target.uri, target.range, newName);
+      return edit;
+  }
+
+  for (const target of targets) {
+    if (onVendor(target)) {
+      continue;
     }
 
-    return edit;
+    if (sym.kind === SymbolKind.Property) {
+      // e.g. $foo -> foo
+      // e.g. foo  -> foo
+      const normalized = newName.replace(/^\$/, '');
+
+      edit.replace(
+        target.uri,
+        target.range,
+        JSON.stringify(target) === JSON.stringify(def) ? `$${normalized}` : normalized,
+      );
+
+      continue;
+    }
+
+    edit.replace(target.uri, target.range, newName);
   }
 
-  private onVendor(x: Location | Uri) {
-    const uri = x instanceof Uri ? x : x.uri;
+  return edit;
+};
 
-    // TODO vendor pathはcomposer.jsonを参照するように
-    // http://tadasy.hateblo.jp/entry/2013/10/09/193415
-    return (workspace.workspaceFolders || [])
-      .map(({ uri }) => `${uri.path}/vendor`)
-      .some((vp) => uri.path.includes(vp));
-  }
-}
+export const renameProvider = { prepareRename, provideRenameEdits };
