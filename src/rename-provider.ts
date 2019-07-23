@@ -13,17 +13,32 @@ import {
 import { getReferences, getSymbol } from './api';
 import { isNone } from 'fp-ts/lib/Option';
 
-const onVendor = (x: Location | Uri) => {
+const COMPOSER_JSON_FILENAME = 'composer.json';
+const DEFAULT_VENDOR_DIR = 'vendor';
+
+const onVendor = async (x: Location | Uri) => {
   const uri = x instanceof Uri ? x : x.uri;
 
-  // TODO vendor pathはcomposer.jsonを参照するように
-  // http://tadasy.hateblo.jp/entry/2013/10/09/193415
-  return (workspace.workspaceFolders || []).map(({ uri }) => `${uri.path}/vendor`).some((vp) => uri.path.includes(vp));
+  for (const folder of (workspace.workspaceFolders || [])) {
+    const found = await workspace.findFiles(`${folder.uri.path}/${COMPOSER_JSON_FILENAME}`);
+    if (found.length === 0) {
+      continue;
+    }
+    const composerJson = JSON.parse((await workspace.openTextDocument(found.pop()!.path)).getText());
+
+    // see: https://getcomposer.org/doc/06-config.md#vendor-dir
+    const config = composerJson.config || {};
+    if (uri.path.includes(`${folder.uri.path}/${config['vendor-dir'] || DEFAULT_VENDOR_DIR}`)) {
+      return true;
+    }
+  }
+
+  return false;
 };
 
 const prepareRename: RenameProvider['prepareRename'] = async (doc, pos) => {
-  if (onVendor(doc.uri)) {
-    throw new Error('You can not rename this symbol');
+  if (await onVendor(doc.uri)) {
+    throw new Error('You can not rename vendor symbol');
   }
 
   const result = await getSymbol(doc.uri, pos);
@@ -32,8 +47,8 @@ const prepareRename: RenameProvider['prepareRename'] = async (doc, pos) => {
   }
   const [sym, def] = result.value;
 
-  if (onVendor(def)) {
-    throw new Error('You can not rename this symbol');
+  if (await onVendor(def)) {
+    throw new Error('You can not rename vendor symbol');
   }
 
   switch (sym.kind) {
@@ -109,7 +124,7 @@ const provideRenameEdits: RenameProvider['provideRenameEdits'] = async (
   }
 
   for (const target of targets) {
-    if (onVendor(target)) {
+    if (await onVendor(target)) {
       continue;
     }
 
