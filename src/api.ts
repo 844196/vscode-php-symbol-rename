@@ -27,6 +27,16 @@ export const getSymbol = async (uri: Uri, pos: Position): Promise<Option<[Docume
     }
   }
 
+  // find symbol by references
+  const refs = await getReferences(uri, pos);
+  for (const ref of refs) {
+    for (const sym of syms) {
+      if (sym.selectionRange.contains(ref.range)) {
+        return some([sym, def.value]);
+      }
+    }
+  }
+
   return none;
 };
 
