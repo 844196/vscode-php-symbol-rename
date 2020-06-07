@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update vscode engine to 1.45.1
 - Update typescript target to es2019
 - Update the use of 'vscode.executeDefinitionProvider' which now returns 'LocationLink[]' (Fix #4)
+- Remove useless yarn.lock
 
 ## [0.0.3] - 2019-07-23
 ### Added
