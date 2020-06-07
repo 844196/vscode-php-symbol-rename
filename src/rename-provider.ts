@@ -47,7 +47,7 @@ const prepareRename: RenameProvider['prepareRename'] = async (doc, pos) => {
   }
   const [sym, def] = result.value;
 
-  if (await onVendor(def)) {
+  if (await onVendor(def.targetUri)) {
     throw new Error('You can not rename vendor symbol');
   }
 
@@ -55,7 +55,7 @@ const prepareRename: RenameProvider['prepareRename'] = async (doc, pos) => {
     case SymbolKind.Class:
     case SymbolKind.Interface:
     case SymbolKind.Module:
-      if (doc.uri.toString() !== def.uri.toString()) {
+      if (doc.uri.toString() !== def.targetUri.toString()) {
         throw new Error('You can not rename this symbol');
       }
   }
@@ -111,13 +111,13 @@ const provideRenameEdits: RenameProvider['provideRenameEdits'] = async (
         }
       }
 
-      if (def.uri.scheme !== 'untitled') {
+      if (def.targetUri.scheme !== 'untitled') {
         const newPath = path.format({
-          dir: path.dirname(def.uri.path),
+          dir: path.dirname(def.targetUri.path),
           name: newName,
           ext: '.php',
         });
-        edit.renameFile(def.uri, def.uri.with({ path: newPath }));
+        edit.renameFile(def.targetUri, def.targetUri.with({ path: newPath }));
       }
 
       return edit;
